@@ -27,6 +27,10 @@ const loadImpers = () => {
  */
 export async function fetchPage(url) {
   const target = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+  const hostname = new URL(target).hostname.toLowerCase();
+  if (/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|::1$|\[::1\])/.test(hostname)) {
+    throw new Error(`blocked: private or internal URL`);
+  }
   const impers = await loadImpers();
   return impers ? viaImpers(impers, target) : viaFetch(target);
 }
