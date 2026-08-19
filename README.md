@@ -10,16 +10,16 @@ The gap is clearest on a task with a few hops in it, and it still shows on a sin
 
 ```
 -- Reddit, multi-hop --
-Codex + oc             ###############                              112,794 tok   6 turns  ✅ right
-Codex default          ########################################     301,009 tok  12 turns  ✅ right
-Claude Code + oc       #################################            250,628 tok   8 turns  ✅ right
-Claude Code default    ##########################                   196,675 tok   7 turns  ❌ failed, blocked
+Codex + oc             ###############                              112,794 tok  $0.24    6 turns  ✅ right
+Codex default          ########################################     301,009 tok  $0.54   12 turns  ✅ right
+Claude Code + oc       #################################            250,628 tok  $0.21    8 turns  ✅ right
+Claude Code default    ##########################                   196,675 tok  $0.14    7 turns  ❌ failed, blocked
 
 -- AAPL, single page --
-Codex + oc             ########                                      59,648 tok   4 turns  ✅ right ($310.03)
-Claude Code default    ################                             123,866 tok   3 turns  ✅ right ($310.03)
-Claude Code + oc       ##########################                   198,976 tok   7 turns  ✅ right ($310.03)
-Codex default          ##########                                    71,947 tok   4 turns  ❌ wrong ($302.25)
+Codex + oc             ########                                      59,648 tok  $0.13    4 turns  ✅ right
+Claude Code default    ################                             123,866 tok  $0.09    3 turns  ✅ right
+Claude Code + oc       ##########################                   198,976 tok  $0.17    7 turns  ✅ right
+Codex default          ##########                                    71,947 tok  $0.13    4 turns  ❌ wrong
 ```
 
 Claude Code's own WebFetch and WebSearch are blocked from reddit.com outright, and by default it has no shell to fall back to, so it does not just cost more on the Reddit task, it fails outright and asks for permission it is never going to get. Codex falls back to its own web search and `curl` there and gets it right, at 2.7x what it costs through oc. On the single AAPL page it flips: Codex's default never opens the page and reports a stale price, while Claude Code's default WebFetch is genuinely the cheapest correct answer in the table, cheaper than oc. Full methodology for both is further down in [Against each agent's own defaults](#against-each-agents-own-defaults).
