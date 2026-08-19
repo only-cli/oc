@@ -189,16 +189,18 @@ The same six tasks run through OpenAI's Codex CLI (`codex exec`) as well, where 
 
 The tables above compare web tools inside one harness. The question people actually ask is simpler: what happens if you just let the agent browse the way it ships? Measured 2026-08-19, one live session per row, on two tasks: a multi-hop one (from `old.reddit.com/r/ClaudeAI/`, follow the top post to its comments and report the post title and the top comment's argument) and a single-page one (read `finance.yahoo.com/quote/AAPL` and report the price at the last market close; that page's raw HTML is about 325,000 tokens, and `oc open` hands the agent the answer in about 456).
 
-| task | session | web path | total tokens billed | turns | answer | passed |
-| --- | --- | --- | ---: | ---: | --- | :---: |
-| Reddit, multi-hop | Codex with oc | `oc` in the shell | 112,794 | 6 | right | ✅ |
-| Reddit, multi-hop | Codex default | web search, then `curl` | 301,009 | 12 | right | ✅ |
-| Reddit, multi-hop | Claude Code with oc | `oc` in the shell | 250,628 | 8 | right | ✅ |
-| Reddit, multi-hop | Claude Code default | WebFetch / WebSearch | 196,675 | 7 | failed, blocked | ❌ |
-| AAPL, single page | Codex with oc | `oc` in the shell | 59,648 | 4 | right ($310.03) | ✅ |
-| AAPL, single page | Claude Code default | WebFetch digest | 123,866 | 3 | right ($310.03) | ✅ |
-| AAPL, single page | Claude Code with oc | `oc` in the shell | 198,976 | 7 | right ($310.03) | ✅ |
-| AAPL, single page | Codex default | web search, never opened the page | 71,947 | 4 | wrong ($302.25) | ❌ |
+| task | session | web path | total tokens billed | est. cost | turns | answer | passed |
+| --- | --- | --- | ---: | ---: | ---: | --- | :---: |
+| Reddit, multi-hop | Codex with oc | `oc` in the shell | 112,794 | $0.24 | 6 | right | ✅ |
+| Reddit, multi-hop | Codex default | web search, then `curl` | 301,009 | $0.54 | 12 | right | ✅ |
+| Reddit, multi-hop | Claude Code with oc | `oc` in the shell | 250,628 | $0.21 | 8 | right | ✅ |
+| Reddit, multi-hop | Claude Code default | WebFetch / WebSearch | 196,675 | $0.14 | 7 | failed, blocked | ❌ |
+| AAPL, single page | Codex with oc | `oc` in the shell | 59,648 | $0.13 | 4 | right | ✅ |
+| AAPL, single page | Claude Code default | WebFetch digest | 123,866 | $0.09 | 3 | right | ✅ |
+| AAPL, single page | Claude Code with oc | `oc` in the shell | 198,976 | $0.17 | 7 | right | ✅ |
+| AAPL, single page | Codex default | web search, never opened the page | 71,947 | $0.13 | 4 | wrong | ❌ |
+
+Cost here is estimated, not billed: `codex exec` reports no dollar figure at all, and this run only recorded tokens and turns. The Claude Code rows apply the blended $/MTok that model actually billed in the six-task table above (oc's own rate for the oc rows, the average of the other four tools for the WebFetch/WebSearch rows); the Codex rows scale `gpt-5.6-sol`'s list price by the same ratio Claude's real blended cost bears to its own list price, since no session here has ever produced a real Codex bill to anchor to.
 
 The bar chart at the top of this README is the Reddit row above, drawn to scale; the gap there is the real story. Claude Code's default WebFetch and WebSearch are both blocked from reddit.com, so the agent had nothing left to try: Bash was not on its default permission list, and after a denied `curl` attempt it gave up and asked a human to approve the tool call, which in a non-interactive run never happens. That is a real gap in what ships out of the box, not a slow answer. Codex's default reached for its own web search tool first, got a page that no longer existed at that URL, then fell back to `curl` with a spoofed user agent across several more calls before it found the right thread. Both `oc` sessions read the subreddit the same way `oc` reads X and LinkedIn: an impersonated Chrome client, one page at a time, following the numbered link to the comments instead of guessing at a URL.
 
