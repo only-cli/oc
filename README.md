@@ -173,13 +173,13 @@ The end-to-end agent benchmark runs Claude Code headless (`claude -p` on `claude
 
 | tool | success | turns | total tokens | total cost USD | avg s |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| oc | 6/6 ✅ | 31 | 871,909 | 0.74 | 13 ✅ |
-| `lynx -dump` | 6/6 ✅ | 29 ✅ | 772,831 ✅ | 0.55 ✅ | 14 |
+| oc | 6/6 | 31 | 871,909 | 0.74 | 13 |
+| `lynx -dump` | 6/6 | 29 | 772,831 | 0.55 | 14 |
 | raw curl | 4/6 | 61 | 1,031,894 | 0.54 | 39 |
-| Jina Reader | 6/6 ✅ | 30 | 855,243 | 0.72 | 19 |
-| Playwright MCP | 6/6 ✅ | 48 | 1,575,695 | 1.22 | 29 |
+| Jina Reader | 6/6 | 30 | 855,243 | 0.72 | 19 |
+| Playwright MCP | 6/6 | 48 | 1,575,695 | 1.22 | 29 |
 
-The ✅ marks the best value per column among tools that finished every task, and total tokens above already include the failed runs' cost rather than dropping them.
+Total tokens above already include the failed runs' cost rather than dropping them.
 
 Each session gets a skill documenting its tool, so every condition runs at its best. Two results are worth stating plainly. oc and lynx were the only tools that returned real content on every task: Reddit served Jina Reader and Playwright MCP a 403, so both "answered" that task by reporting the block, and raw curl burned its full turn budget there and on the GitHub search, roughly 400k tokens each, and returned nothing. But lynx, not oc, took the token and cost columns this round, and the reason was a missing feature. The compact view leaves link URLs out to save tokens, and the version under test had no way to follow one, so an agent had to re-fetch the page as `oc open --json` or `oc raw` just to learn where `[15]` points, while `lynx -dump` prints a references list for free. That tax is most of the gap on the multi-step tasks. `oc do <n>` has since landed and closes it: following a Hacker News story into its comments now costs about 3k characters instead of the roughly 23k the re-fetch route spent. The next benchmark run will say whether that is enough to take the column.
 
