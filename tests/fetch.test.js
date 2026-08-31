@@ -5,7 +5,7 @@ import https from 'node:https';
 import net from 'node:net';
 import tls from 'node:tls';
 
-const { fetchPage, followRedirects, resolveProxy, proxyGet } = await import('../src/fetch.js');
+const { fetchPage, followRedirects, resolveProxy, proxyGet, viaImpers } = await import('../src/fetch.js');
 
 const BLOCKED_MESSAGE = 'blocked: private or internal URL';
 
@@ -727,3 +727,73 @@ test('the proxy transport counts the body against the same cap', async () => {
     proxy.close();
   }
 });
+
+// A stand-in for the impers module whose get() either answers with a minimal
+// 200 page or refuses the identity the way impers does when the loaded native
+// library does not know the fingerprint an alias resolves to: it throws an
+// ImpersonateError before any request leaves the process (issue #40, where a
+// stale system libcurl-impersonate predating chrome150 broke oc outright).
+const fakeImpers = (refuse, html = '<html>ok</html>') => {
+  const identities = [];
+  const get = (url, opts) => {
+    identities.push(opts.impersonate);
+    if (refuse.includes(opts.impersonate)) {
+      const err = new Error(`Impersonating ${opts.impersonate} is not supported`);
+      err.name = 'ImpersonateError';
+      return Promise.reject(err);
+    }
+    return Promise.resolve({
+      status: 200,
+      headers: new Map([['content-type', 'text/html']]),
+      text: () => Promise.resolve(html),
+      url,
+    });
+  };
+  return { get, identities };
+};
+
+test('a refused chrome fingerprint falls back to the firefox identity', () => withoutProxyEnv(async () => {
+  const impers = fakeImpers(['chrome']);
+  const page = await viaImpers(impers, 'https://public.example/page');
+  assert.deepEqual(impers.identities, ['chrome', 'firefox']);
+  assert.equal(page.via, 'impers:firefox');
+  assert.equal(page.status, 200);
+  assert.equal(page.html, '<html>ok</html>');
+}));
+
+test('when both identities are refused the page still arrives via plain fetch', async () => {
+  // The proxy is only here to give viaFetch somewhere real to land without
+  // leaving the machine, same shape as the HTTP_PROXY wiring test above.
+  const seen = [];
+  const proxy = http.createServer((req, res) => {
+    seen.push(req.url);
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end('<html><title>via fetch</title></html>');
+  });
+  const port = await listen(proxy);
+  const prev = Object.fromEntries(PROXY_ENV_KEYS.map((k) => [k, process.env[k]]));
+  for (const k of PROXY_ENV_KEYS) delete process.env[k];
+  process.env.HTTP_PROXY = `http://127.0.0.1:${port}`;
+  try {
+    const impers = fakeImpers(['chrome', 'firefox']);
+    const page = await viaImpers(impers, 'http://1.1.1.1/page');
+    assert.deepEqual(impers.identities, ['chrome', 'firefox']);
+    assert.equal(page.via, 'fetch');
+    assert.equal(page.status, 200);
+    assert.equal(page.html, '<html><title>via fetch</title></html>');
+    assert.deepEqual(seen, ['http://1.1.1.1/page']);
+  } finally {
+    proxy.close();
+    for (const k of PROXY_ENV_KEYS) {
+      if (prev[k] === undefined) delete process.env[k];
+      else process.env[k] = prev[k];
+    }
+  }
+});
+
+test('only an ImpersonateError downgrades; other impers failures propagate', () => withoutProxyEnv(async () => {
+  const impers = {
+    get: () => Promise.reject(new Error('connection reset')),
+  };
+  await assert.rejects(() => viaImpers(impers, 'https://public.example/page'), /connection reset/);
+}));
