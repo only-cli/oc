@@ -141,8 +141,15 @@ export function render(page, { budget = 500, from = 0 } = {}) {
   // An input on the page adds no action. 'fill' and 'submit' are still stubs
   // that throw, and this footer is the line an agent trusts for what to run
   // next, so naming one of them costs a turn and returns nothing.
+  //
+  // 'find' comes before 'read' because it is the cheaper way to go deeper: one
+  // command lands on the block that matters, where 'read' needs the right
+  // number first and 'next' pages toward it. The entry costs about three
+  // tokens on every render, and skipping one 'next' on a long page pays for
+  // a hundred of them.
   const actions = [
     hasLinks && 'do <n>',
+    'find <query>',
     'read <n>',
     rest.length && 'next',
     'raw',

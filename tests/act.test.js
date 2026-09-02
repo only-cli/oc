@@ -282,3 +282,23 @@ test('no footer names a command that is not available yet', async () => {
     }
   }
 });
+
+test('every footer offers find, the cheapest way to go deeper on a page', () => {
+  // SKILL.md lists find first under "going further, cheapest first", and the
+  // footer is what an agent actually reads, so the two have to agree. Same
+  // three footer sites as the stub probe above: a render, and both of find's
+  // paths.
+  open();
+  const outputs = [
+    render(page(), { budget: 500 }).text,
+    find('postgres'),
+    find('a'),
+  ];
+  const footers = outputs.map((out) => out.split('\n').find((line) => line.startsWith('actions:')));
+  assert.equal(footers.filter(Boolean).length, outputs.length, `every output should carry a footer:\n${footers.join('\n')}`);
+  for (const footer of footers) {
+    assert.ok(footer.includes('find <query>'), `footer should offer find:\n${footer}`);
+    // Cheapest first: find is listed ahead of read.
+    assert.ok(footer.indexOf('find <query>') < footer.indexOf('read <n>'), `find should come before read:\n${footer}`);
+  }
+});

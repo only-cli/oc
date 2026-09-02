@@ -12,7 +12,7 @@ $ oc open news.ycombinator.com
 [1] Show HN: I built a tiny CSV toolkit
 [2] 312 comments
 ...
-actions: do <n> | read <n> | next | raw
+actions: do <n> | find <query> | read <n> | next | raw
 
 $ oc do 1
 ```
