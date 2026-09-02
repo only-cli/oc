@@ -101,7 +101,6 @@ export function render(page, { budget = 500, from = 0 } = {}) {
   const lines = [...head];
   let spent = estimateTokens(lines.join('\n'));
   let hasLinks = false;
-  let hasInputs = false;
   let i = Math.max(0, from);
 
   // What the rest of the page would cost if it were all printed. When that is
@@ -129,7 +128,6 @@ export function render(page, { budget = 500, from = 0 } = {}) {
     spent += cost;
     lines.push(line);
     if (block.type === 'link' || block.type === 'button') hasLinks = true;
-    if (block.type === 'input') hasInputs = true;
   }
 
   const rest = blocks.slice(i);
@@ -140,10 +138,11 @@ export function render(page, { budget = 500, from = 0 } = {}) {
   if (rest.length) {
     lines.push(`... ${num(rest.length)} more blocks (~${num(leftTokens)} tokens): 'oc next' for the next ~${num(budget)}, 'oc raw' for all`);
   }
+  // An input on the page adds no action. 'fill' and 'submit' are still stubs
+  // that throw, and this footer is the line an agent trusts for what to run
+  // next, so naming one of them costs a turn and returns nothing.
   const actions = [
     hasLinks && 'do <n>',
-    hasInputs && 'fill <n> <text>',
-    hasInputs && 'submit',
     'read <n>',
     rest.length && 'next',
     'raw',

@@ -244,3 +244,41 @@ test('a snippet stays one line even when the block it came from is code', () => 
   assert.match(lines[0], /^2 matches for "needle"/);
   assert.equal(lines[1], '[1] first(); needle(); third();');
 });
+
+test('no footer names a command that is not available yet', async () => {
+  // The footer is the line an agent reads to decide what to run next, so a
+  // name in it that always throws costs a turn and returns nothing. Which
+  // commands are stubs is probed here rather than listed, so the next stub to
+  // land is covered without anyone remembering to come back and add it.
+  const act = await import('../src/act.js');
+  const stubs = Object.entries(act)
+    .filter(([, value]) => typeof value === 'function')
+    .filter(([, fn]) => {
+      try {
+        fn();
+        return false;
+      } catch (err) {
+        return err instanceof act.NotImplemented;
+      }
+    })
+    .map(([name]) => name);
+  assert.ok(stubs.length, 'the probe found no stubs, so it is no longer testing anything');
+
+  open();
+  const loginHTML = readFileSync(new URL('./pages/login.html', import.meta.url), 'utf8');
+  // One output per place that builds a footer: a render with inputs, which is
+  // what used to offer fill and submit, and both of find's paths.
+  const outputs = [
+    render(page(), { budget: 500 }).text,
+    render(distill(loginHTML, 'https://example.test/login'), { budget: 500 }).text,
+    find('postgres'),
+    find('a'),
+  ];
+  const footers = outputs.flatMap((out) => out.split('\n').filter((line) => line.startsWith('actions:')));
+  assert.equal(footers.length, outputs.length, `every output should carry one footer:\n${footers.join('\n')}`);
+  for (const footer of footers) {
+    for (const stub of stubs) {
+      assert.ok(!footer.includes(stub), `footer offers '${stub}', which throws NotImplemented:\n${footer}`);
+    }
+  }
+});
