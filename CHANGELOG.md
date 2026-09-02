@@ -3,6 +3,31 @@
 Notable changes per release. Releases before 0.4.0 are listed at
 [github.com/only-cli/oc/releases](https://github.com/only-cli/oc/releases).
 
+## 0.5.1
+
+### Added
+
+- `find <query>` in every `actions:` footer, after `do <n>` and before
+  `read <n>`, the order the skill's "going further, cheapest first" list
+  already gives. One command lands on the block that matters, where `read`
+  needs the right number first and `next` pages toward it. The entry costs 3
+  or 4 tokens per render. (#46)
+
+### Fixed
+
+- `oc open` no longer dies with `Impersonating chrome150 is not supported` on
+  machines where impers loads a system copy of libcurl-impersonate older than
+  v2.1.0, which predates the fingerprint the `chrome` alias resolves to. A
+  refused fingerprint now downgrades the same way a blocked response already
+  did: chrome falls back to firefox, and when both identities are refused the
+  plain fetch transport still gets the page. Any other impers failure
+  propagates unchanged, and installs where impers works keep the newest chrome
+  fingerprint. (#40)
+- The `actions:` footer no longer offers `fill <n> <text>` and `submit` on
+  pages with an input. Both are still planned, and following the footer's
+  own suggestion always failed. A test now keeps every footer free of
+  commands that are not available yet. (#44)
+
 ## 0.5.0
 
 ### Added
