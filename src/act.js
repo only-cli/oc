@@ -234,7 +234,7 @@ export function find(query, { session = DEFAULT_SESSION, budget = 500 } = {}) {
     return [
       `1 match for "${query}"${separately}, region [${only.n}]`,
       read(only.n, { session, budget: budget * FINISH }),
-      `actions: ${follow}read <n> | next | raw`,
+      `actions: ${follow}find <query> | read <n> | next | raw`,
     ].join('\n');
   }
 
@@ -264,7 +264,9 @@ export function find(query, { session = DEFAULT_SESSION, budget = 500 } = {}) {
   if (shown < hits.length) {
     lines.push(`... ${hits.length - shown} more matches, narrow the query or raise --budget`);
   }
-  lines.push(`actions: ${[hasLinks && 'do <n>', 'read <n>', 'next', 'raw'].filter(Boolean).join(' | ')}`);
+  // Offering find on its own output is what makes "narrow the query" above an
+  // action rather than advice.
+  lines.push(`actions: ${[hasLinks && 'do <n>', 'find <query>', 'read <n>', 'next', 'raw'].filter(Boolean).join(' | ')}`);
   return lines.join('\n');
 }
 
