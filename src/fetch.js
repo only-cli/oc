@@ -555,9 +555,24 @@ function captureSetCookie(jar, url, res) {
   jar.storeFromResponse(url, getSetCookieHeaders(res));
 }
 
-async function viaImpers(impers, target, jar) {
+/**
+ * Fetch a page through impers, downgrading identity when one is refused.
+ * Exported so the downgrade chain can be proven against a fake impers; the
+ * real entry point is fetchPage.
+ * @param {any} impers - the impers module (or a stand-in with a get method)
+ * @param {string} target
+ * @param {object} [jar]
+ * @returns {Promise<{url: string, html: string, status: number, via: string}>}
+ */
+export async function viaImpers(impers, target, jar) {
   // Some sites (Reddit) 403 the chrome fingerprint but accept firefox, so a
-  // blocked first attempt gets one cheap retry with a second identity.
+  // blocked first attempt gets one cheap retry with a second identity. An
+  // ImpersonateError is the same story one layer down: impers resolves the
+  // 'chrome' alias to its newest fingerprint, but the native library it loads
+  // can be an older system copy of libcurl-impersonate that predates that
+  // fingerprint and refuses it before any request leaves. Firefox aliases to
+  // an older target that such a library usually still knows, and when both
+  // identities are refused the plain fetch transport still gets the page.
   const asking = (impersonate) => (url) =>
     impers.get(url, {
       impersonate,
@@ -566,14 +581,23 @@ async function viaImpers(impers, target, jar) {
       headers: jarHeaders(jar, url, {}),
     });
   const onResponse = (url, res) => captureSetCookie(jar, url, res);
+  const attempt = async (impersonate) => {
+    try {
+      const { res } = await followRedirects(asking(impersonate), target, { onResponse });
+      return { res, status: res.status ?? res.statusCode ?? 0 };
+    } catch (err) {
+      if (err?.name !== 'ImpersonateError') throw err;
+      return null;
+    }
+  };
   let via = 'impers:chrome';
-  let { res } = await followRedirects(asking('chrome'), target, { onResponse });
-  let status = res.status ?? res.statusCode ?? 0;
-  if (status >= 400) {
+  let got = await attempt('chrome');
+  if (!got || got.status >= 400) {
     via = 'impers:firefox';
-    ({ res } = await followRedirects(asking('firefox'), target, { onResponse }));
-    status = res.status ?? res.statusCode ?? 0;
+    got = (await attempt('firefox')) ?? got;
   }
+  if (!got) return viaFetch(target, jar);
+  const { res, status } = got;
   if (status >= 400) throw new Error(`fetch failed: ${status} for ${target}`);
   assertReadableType(res.headers.get('content-type'));
   assertBodySize(Number(res.headers.get('content-length')) || 0, target);
