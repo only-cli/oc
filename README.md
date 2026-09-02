@@ -168,12 +168,12 @@ Private and internal addresses are refused whether or not a proxy is set. With a
 
 ## Benchmarks
 
-Full methodology, per-task rows, and the Codex runs live in [only-cli/benchmarks](https://github.com/only-cli/benchmarks). Where things stand (oc 0.5.0, August 2026, live sites):
+Full methodology, per-task rows, and the Codex runs live in [only-cli/benchmarks](https://github.com/only-cli/benchmarks). Where things stand (oc 0.5.1, September 2026, live sites):
 
-- **142x fewer tokens than raw HTML** across 15 real pages: 10,936 against 1,552,491. 14x fewer than Jina Reader, 49x fewer than Playwright MCP's accessibility snapshot.
-- **The only reader that returned real content on every page.** Reddit blocked curl, Jina Reader and Playwright; Jina also failed LinkedIn and Yahoo Finance; DuckDuckGo blocked lynx. oc's Chrome impersonation read all fifteen.
-- **Half the cost of Claude Code's built-in `WebSearch`** on Wikipedia lookups: $0.27 against $0.52 for five questions, both 5/5 correct, on 29x less fresh input.
-- **23% cheaper than `WebFetch` and 35% cheaper than `WebSearch`** on eleven language docs lookups, at equal or better accuracy.
+- **125x fewer tokens than raw HTML** across the twelve real pages both could read: 8,519 against 1,064,474. 15x fewer than Jina Reader, 59x fewer than Playwright MCP's accessibility snapshot.
+- **Real content on every page it could reach, and an honest failure on the two it could not.** Reddit now sends logged-out readers to a login wall, and every other tool returned that wall, or a 403 block page, as a success. Yahoo Finance refuses plain fetch outright and DuckDuckGo still blocks lynx; oc's Chrome impersonation read both.
+- **Half the cost of Claude Code's built-in `WebSearch`** on Wikipedia lookups: $0.23 against $0.45 for five questions, both 5/5 correct, on 25x less fresh input.
+- **21% cheaper than `WebFetch` and 34% cheaper than `WebSearch`** on eleven language docs lookups, at equal or better accuracy.
 
 The tables behind those numbers:
 
@@ -181,27 +181,27 @@ The tables behind those numbers:
 
 | method | tokens for 15 pages | notes |
 | --- | ---: | --- |
-| `oc open` | 10,936 | the only reader that returned real content on every page |
-| Jina Reader | 148,479 | both Reddit results are block pages; failed LinkedIn and Yahoo Finance outright |
-| Playwright MCP | 531,335 | accessibility snapshots; both Reddit snapshots are block pages |
-| raw HTML fetch | 1,552,491 | the stock quote page alone is 399,881 tokens |
+| `oc open` | 8,971 | real content on 13 of 15 pages; the two Reddit pages are behind a login wall, and oc is the only reader that reported that instead of returning the wall |
+| Jina Reader | 105,198 | both Reddit results are block pages; failed LinkedIn and the Node.js `fs` page outright |
+| Playwright MCP | 531,303 | accessibility snapshots; both Reddit snapshots are the login wall |
+| raw HTML fetch | 1,240,669 | both Reddit results are the login wall, 88,000 tokens of it each; Yahoo Finance refused the connection |
 
-oc's budget keeps every page near 500 tokens however much it weighs: the Yahoo Finance quote is 399,881 tokens raw and 456 through oc, Node's `fs` reference 273,820 against 475.
+oc's budget keeps every page near 500 tokens however much it weighs: the YouTube watch page is 345,487 tokens raw and 688 through oc, Node's `fs` reference 275,425 against 479. On the twelve pages both could read, raw HTML costs 125x what oc does: 1,064,474 against 8,519.
 
 **Whole tasks against the agent's built-in web tools.** Read cost is one thing, what an agent actually spends is another, so a second set of suites runs full lookups end to end in Claude Code (`claude-sonnet-5`), one tool per run, and grades every answer. Five Wikipedia lookups and eleven language documentation lookups:
 
 | suite | tool | correct | input tokens | cost | avg time |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Wikipedia | `oc wiki` | 5/5 | 5,535 | $0.27 | 11s |
-| | built-in `WebFetch` | 5/5 | 128,792 | $0.37 | 14s |
-| | built-in `WebSearch` | 5/5 | 160,431 | $0.52 | 22s |
-| Language docs | `oc docs` | 11/11 | 12,965 | $0.57 | 9s |
-| | built-in `WebFetch` | 10/11 | 203,489 | $0.74 | 11s |
-| | built-in `WebSearch` | 11/11 | 209,782 | $0.89 | 15s |
+| Wikipedia | `oc wiki` | 5/5 | 5,535 | $0.23 | 8s |
+| | built-in `WebFetch` | 5/5 | 129,257 | $0.35 | 12s |
+| | built-in `WebSearch` | 5/5 | 136,982 | $0.45 | 16s |
+| Language docs | `oc docs` | 11/11 | 12,967 | $0.56 | 8s |
+| | built-in `WebFetch` | 10/11 | 203,497 | $0.71 | 12s |
+| | built-in `WebSearch` | 11/11 | 215,833 | $0.85 | 14s |
 
-Input tokens are the fresh context each tool put in front of the model, which is the number the page size drives; totals including cache reads sit closer together because the agent's own prompt dominates them. oc stays flat at roughly 1,100 to 1,200 tokens per task, while `WebFetch` pays for whatever the page weighs, from 5.7x more on a short Wikipedia stub to 35x more on the German Berlin article. `WebFetch`'s one wrong answer is an access result: cppreference returns 403 to it, while oc's Chrome impersonation reads the same page. `WebSearch` was given only the question, never the URL, which is the honest way to use it and part of why it costs the most.
+Input tokens are the fresh context each tool put in front of the model, which is the number the page size drives; totals including cache reads sit closer together because the agent's own prompt dominates them. oc stays flat at roughly 1,100 to 1,200 tokens per task, while `WebFetch` pays for whatever the page weighs, from 5.9x more on a short Wikipedia stub to 35x more on the German Berlin article. `WebFetch`'s one wrong answer is an access result: cppreference returns 403 to it, while oc's Chrome impersonation reads the same page. `WebSearch` was given only the question, never the URL, which is the honest way to use it and part of why it costs the most.
 
-The same suites through Codex (`gpt-5.6-sol`) split. On Wikipedia, `oc wiki` was cheaper and also right where Codex's own search quoted a stale Berlin population. On the docs lookups Codex's search won by 16%: those facts are already in its snippets, and it answered most tasks in two turns without opening a page.
+The same suites through Codex (`gpt-5.6-sol`, on the 0.4.0 and 0.5.0 runs) split. On Wikipedia, `oc wiki` was cheaper and also right where Codex's own search quoted a stale Berlin population. On the docs lookups Codex's search won by 16%: those facts are already in its snippets, and it answered most tasks in two turns without opening a page.
 
 ## Status
 
