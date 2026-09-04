@@ -81,7 +81,7 @@ Works on any mostly-static site with no per-site setup: news sites, blogs, docum
 | website | command | shortcuts |
 | --- | --- | --- |
 | Hacker News | `oc hn` | `top`, `new`, `item <id>`, `user <name>` |
-| Reddit | `oc reddit` (via old.reddit.com) | `sub <name>`, `post <id>`, `user <name>`, `search <query>` |
+| Reddit | `oc reddit` (via the Atom feeds on www.reddit.com) | `sub <name>`, `new <name>`, `top <name>`, `post <id>`, `user <name>`, `search <query>` |
 | GitHub | `oc gh` | `repo <owner> <name>`, `user <name>`, `search <query>`, `trending`, `issues <owner> <name>` |
 | X | `oc x` | `user <name>`, `post <id>` |
 | LinkedIn | `oc linkedin` | `profile <name>`, `company <name>`, `jobs <query>` (public guest views) |

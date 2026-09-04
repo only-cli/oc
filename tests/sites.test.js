@@ -42,6 +42,19 @@ test('a real site with a missing or unknown verb names the verbs it has', () => 
     /not a reddit\.com shortcut.*sub <name>/s);
 });
 
+test('reddit verbs reach the www.reddit.com atom feeds, not old.reddit.com', () => {
+  // old.reddit.com sends every logged-out request to a login page and the
+  // .json views on www answer 403, so the feeds are the only public reading.
+  assert.equal(resolveSite('reddit', ['sub', 'ClaudeAI']).url, 'https://www.reddit.com/r/ClaudeAI/.rss');
+  assert.equal(resolveSite('reddit', ['post', '1w48zcr']).url, 'https://www.reddit.com/comments/1w48zcr/.rss');
+  assert.equal(resolveSite('reddit', ['search', 'claude code']).url, 'https://www.reddit.com/search.rss?q=claude%20code');
+  for (const verb of Object.keys(sites().get('reddit').commands)) {
+    const { url } = resolveSite('reddit', [verb, 'x']);
+    assert.ok(url.startsWith('https://www.reddit.com/'), `${verb} left www: ${url}`);
+    assert.ok(/\.rss(\?|$)/.test(url), `${verb} is not a feed: ${url}`);
+  }
+});
+
 test('a shortcut called with too few args says what it needs', () => {
   assert.throws(() => resolveSite('gh', ['repo', 'only-cli']), /usage: oc gh repo <owner> <name>/);
 });

@@ -1,9 +1,11 @@
 {
   "domain": "reddit.com",
   "commands": {
-    "sub": { "open": "https://old.reddit.com/r/{name}", "args": ["name"] },
-    "post": { "open": "https://old.reddit.com/comments/{id}", "args": ["id"] },
-    "user": { "open": "https://old.reddit.com/user/{name}", "args": ["name"] },
-    "search": { "open": "https://old.reddit.com/search?q={query}", "args": ["query"] }
+    "sub": { "open": "https://www.reddit.com/r/{name}/.rss", "args": ["name"] },
+    "new": { "open": "https://www.reddit.com/r/{name}/new/.rss", "args": ["name"] },
+    "top": { "open": "https://www.reddit.com/r/{name}/top/.rss?t=week", "args": ["name"] },
+    "post": { "open": "https://www.reddit.com/comments/{id}/.rss", "args": ["id"] },
+    "user": { "open": "https://www.reddit.com/user/{name}/.rss", "args": ["name"] },
+    "search": { "open": "https://www.reddit.com/search.rss?q={query}", "args": ["query"] }
   }
 }
