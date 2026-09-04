@@ -5,7 +5,7 @@ import https from 'node:https';
 import net from 'node:net';
 import tls from 'node:tls';
 
-const { fetchPage, followRedirects, resolveProxy, proxyGet, viaImpers } = await import('../src/fetch.js');
+const { fetchPage, followRedirects, identityOrder, resolveProxy, proxyGet, viaImpers } = await import('../src/fetch.js');
 
 const BLOCKED_MESSAGE = 'blocked: private or internal URL';
 
@@ -790,6 +790,33 @@ test('when both identities are refused the page still arrives via plain fetch', 
     }
   }
 });
+
+test('reddit.com is asked with the firefox fingerprint first', () => withoutProxyEnv(async () => {
+  // Reddit's edge answers the chrome fingerprint with a 403 or a 429 while
+  // letting firefox through (#52), and it rate-limits anonymous readers per
+  // address, so a wasted chrome attempt there is a real cost, not a retry.
+  assert.deepEqual(identityOrder('https://www.reddit.com/r/ClaudeAI/.rss'), ['firefox', 'chrome']);
+  assert.deepEqual(identityOrder('https://old.reddit.com/r/ClaudeAI/'), ['firefox', 'chrome']);
+  assert.deepEqual(identityOrder('https://reddit.com/'), ['firefox', 'chrome']);
+  assert.deepEqual(identityOrder('https://notreddit.com/'), ['chrome', 'firefox']);
+  assert.deepEqual(identityOrder('https://reddit.com.example/'), ['chrome', 'firefox']);
+  assert.deepEqual(identityOrder('https://news.ycombinator.com/'), ['chrome', 'firefox']);
+  assert.deepEqual(identityOrder('not a url'), ['chrome', 'firefox']);
+
+  const impers = fakeImpers([]);
+  const page = await viaImpers(impers, 'https://www.reddit.com/r/ClaudeAI/.rss');
+  assert.deepEqual(impers.identities, ['firefox']);
+  assert.equal(page.via, 'impers:firefox');
+  assert.equal(page.status, 200);
+}));
+
+test('a refused firefox fingerprint on reddit.com falls back to chrome', () => withoutProxyEnv(async () => {
+  const impers = fakeImpers(['firefox']);
+  const page = await viaImpers(impers, 'https://www.reddit.com/r/ClaudeAI/.rss');
+  assert.deepEqual(impers.identities, ['firefox', 'chrome']);
+  assert.equal(page.via, 'impers:chrome');
+  assert.equal(page.status, 200);
+}));
 
 test('only an ImpersonateError downgrades; other impers failures propagate', () => withoutProxyEnv(async () => {
   const impers = {

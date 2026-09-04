@@ -555,6 +555,29 @@ function captureSetCookie(jar, url, res) {
   jar.storeFromResponse(url, getSetCookieHeaders(res));
 }
 
+// Hosts whose edge answers the chrome fingerprint with a 403 or a 429 while
+// letting firefox through. reddit.com started doing this in 2026 (#52), so
+// starting with chrome there would turn every read into two requests against
+// a per-address rate limit of about ten a minute. Subdomains inherit the
+// entry.
+const FIREFOX_FIRST_HOSTS = ['reddit.com'];
+
+/**
+ * The order in which impers identities are tried for a URL.
+ * @param {string} target
+ * @returns {['chrome', 'firefox'] | ['firefox', 'chrome']}
+ */
+export function identityOrder(target) {
+  let host = '';
+  try {
+    host = new URL(target).hostname.toLowerCase();
+  } catch {
+    return ['chrome', 'firefox'];
+  }
+  const firefoxFirst = FIREFOX_FIRST_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
+  return firefoxFirst ? ['firefox', 'chrome'] : ['chrome', 'firefox'];
+}
+
 /**
  * Fetch a page through impers, downgrading identity when one is refused.
  * Exported so the downgrade chain can be proven against a fake impers; the
@@ -565,14 +588,15 @@ function captureSetCookie(jar, url, res) {
  * @returns {Promise<{url: string, html: string, status: number, via: string}>}
  */
 export async function viaImpers(impers, target, jar) {
-  // Some sites (Reddit) 403 the chrome fingerprint but accept firefox, so a
-  // blocked first attempt gets one cheap retry with a second identity. An
+  // A blocked first attempt gets one cheap retry with the other identity. An
   // ImpersonateError is the same story one layer down: impers resolves the
   // 'chrome' alias to its newest fingerprint, but the native library it loads
   // can be an older system copy of libcurl-impersonate that predates that
   // fingerprint and refuses it before any request leaves. Firefox aliases to
   // an older target that such a library usually still knows, and when both
   // identities are refused the plain fetch transport still gets the page.
+  // Hosts that are known to refuse chrome outright start with firefox, so the
+  // usual case there costs one request instead of a 403 and a retry.
   const asking = (impersonate) => (url) =>
     impers.get(url, {
       impersonate,
@@ -590,11 +614,12 @@ export async function viaImpers(impers, target, jar) {
       return null;
     }
   };
-  let via = 'impers:chrome';
-  let got = await attempt('chrome');
+  const [first, second] = identityOrder(target);
+  let via = `impers:${first}`;
+  let got = await attempt(first);
   if (!got || got.status >= 400) {
-    via = 'impers:firefox';
-    got = (await attempt('firefox')) ?? got;
+    via = `impers:${second}`;
+    got = (await attempt(second)) ?? got;
   }
   if (!got) return viaFetch(target, jar);
   const { res, status } = got;
