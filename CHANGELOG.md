@@ -3,6 +3,16 @@
 Notable changes per release. Releases before 0.4.0 are listed at
 [github.com/only-cli/oc/releases](https://github.com/only-cli/oc/releases).
 
+## Unreleased
+
+### Changed
+
+- Requests to reddit.com present the Firefox fingerprint first and fall back
+  to Chrome, the reverse of every other site. Reddit's edge answers the Chrome
+  fingerprint with a 403 or a 429 while letting Firefox through, and since it
+  allows anonymous readers about ten requests a minute per address, the wasted
+  Chrome attempt was costing a real share of that budget on every read (#52).
+
 ## 0.5.2
 
 ### Changed
