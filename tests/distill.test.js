@@ -145,6 +145,30 @@ test('atom feeds render as pages: entries become headings, bodies unescape', () 
   assert.ok(!text.includes('&lt;'), 'entry body left escaped');
 });
 
+test('a reddit post feed renders as the post followed by its comments', () => {
+  // Reddit closed old.reddit.com and its .json views to logged-out readers in
+  // 2026; the Atom feeds on www.reddit.com are what oc reddit rides now. A
+  // post feed is one entry for the post and one per comment, each comment
+  // titled "/u/name on <post title>", so the whole thread reads as one page.
+  const xml = readFileSync(new URL('./pages/reddit_post.xml', import.meta.url), 'utf8');
+  const p = distill(xml, 'https://www.reddit.com/comments/1fixture/.rss');
+  assert.equal(p.title, 'Why does the budget flag round up? : reddit.com');
+  const headings = p.blocks.filter((b) => b.type === 'heading').map((b) => b.text);
+  assert.deepEqual(headings, [
+    'Why does the budget flag round up?',
+    '/u/first_reply on Why does the budget flag round up?',
+    '/u/second_reply on Why does the budget flag round up?',
+  ]);
+  const text = p.blocks.map((b) => b.text).join(' ');
+  assert.ok(text.includes('Is that on purpose?'), 'post body missing');
+  assert.ok(text.includes('by /u/fixture_poster, 2026-09-01'), 'post byline missing');
+  assert.ok(text.includes('One extra tool call costs more'), 'comment body missing');
+  assert.ok(!text.includes('SC_OFF'), 'reddit markup comments leaked into the text');
+  const rendered = render(p).text;
+  assert.ok(rendered.includes('## [1] Why does the budget flag round up?'), 'post is not the first numbered heading');
+  assert.ok(estimateTokens(rendered) < 500, `three-entry thread should fit the default budget, got ${estimateTokens(rendered)}`);
+});
+
 test('feed entry code blocks survive raw markdown', () => {
   const md = toMarkdown(feed);
   assert.ok(md.startsWith('# Why is the sky blue? - Fixture Overflow'));

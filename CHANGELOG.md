@@ -3,6 +3,21 @@
 Notable changes per release. Releases before 0.4.0 are listed at
 [github.com/only-cli/oc/releases](https://github.com/only-cli/oc/releases).
 
+## Unreleased
+
+### Changed
+
+- `oc reddit` reads the Atom feeds on www.reddit.com instead of old.reddit.com
+  pages. Reddit has sent every logged-out old.reddit.com request to a login
+  page since 30 June 2026, and the `.json` views on www.reddit.com have
+  answered 403 to anything without an OAuth token since 30 May, whatever the
+  User-Agent or TLS fingerprint. The feeds still answer, so `sub`, `post`,
+  `user`, and `search` point at them, and `new <name>` and `top <name>` join
+  the verbs. A subreddit renders in about 480 tokens and a thread with 22
+  comments in about 1,000. The feeds carry no scores or comment counts, and
+  anonymous reddit.com allows roughly ten requests a minute per address, so a
+  burst of shortcuts ends in a 429 that takes minutes to clear. (#52)
+
 ## 0.5.1
 
 ### Added
