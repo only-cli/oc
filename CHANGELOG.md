@@ -3,6 +3,27 @@
 Notable changes per release. Releases before 0.4.0 are listed at
 [github.com/only-cli/oc/releases](https://github.com/only-cli/oc/releases).
 
+## Unreleased
+
+### Fixed
+
+- A feed entry's title is now the link to the entry, so `oc do <n>` on a post
+  in a subreddit feed opens it. The link used to sit beside the byline as an
+  anchor labelled `open`, the same label on every entry, and the
+  repeated-controls filter hid them all on any feed with five or more entries,
+  which left nothing in a listing that led anywhere: an agent asked to open
+  the first post's comments got the heading text back, refetched the feed
+  looking for the link, and met Reddit's 429 (#59).
+
+### Changed
+
+- `oc open` on a reddit.com front page, subreddit, post, user or search URL
+  fetches the matching www.reddit.com Atom feed when no login session is
+  held, since the HTML page ends at a login wall for a logged-out reader.
+  Following a post out of a feed lands on its comments feed instead of the
+  wall. A URL that is already a feed, any other reddit.com path, and any
+  request carrying reddit.com cookies are fetched as asked (#59).
+
 ## 0.5.3
 
 ### Changed

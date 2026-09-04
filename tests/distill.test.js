@@ -137,8 +137,10 @@ test('atom feeds render as pages: entries become headings, bodies unescape', () 
   const headings = p.blocks.filter((b) => b.type === 'heading');
   assert.equal(headings[0].text, 'Why is the sky blue?');
   assert.equal(headings[1].text, 'Answer by Tyndall for Why is the sky blue?');
-  const open = p.blocks.find((b) => b.type === 'link' && b.text === 'open');
-  assert.equal(open.href, 'https://example.test/questions/42/why-is-the-sky-blue');
+  // The title is the entry's link, so the number the agent sees is the one
+  // that follows it. It used to be a separate anchor labelled "open".
+  assert.equal(headings[0].href, 'https://example.test/questions/42/why-is-the-sky-blue');
+  assert.equal(p.blocks.find((b) => b.type === 'link' && b.text === 'open'), undefined, 'the open anchor is back');
   const text = p.blocks.map((b) => b.text).join(' ');
   assert.ok(text.includes('Rayleigh scattering'), 'entry body missing');
   assert.ok(text.includes('by Ray Leigh, 2026-04-08'), 'byline missing');
@@ -159,6 +161,9 @@ test('a reddit post feed renders as the post followed by its comments', () => {
     '/u/first_reply on Why does the budget flag round up?',
     '/u/second_reply on Why does the budget flag round up?',
   ]);
+  const post = p.blocks.find((b) => b.type === 'heading');
+  assert.equal(post.href, 'https://www.reddit.com/r/FixtureSub/comments/1fixture/why_does_the_budget_flag_round_up/',
+    'the post heading is not the link to the post');
   const text = p.blocks.map((b) => b.text).join(' ');
   assert.ok(text.includes('Is that on purpose?'), 'post body missing');
   assert.ok(text.includes('by /u/fixture_poster, 2026-09-01'), 'post byline missing');
@@ -167,6 +172,24 @@ test('a reddit post feed renders as the post followed by its comments', () => {
   const rendered = render(p).text;
   assert.ok(rendered.includes('## [1] Why does the budget flag round up?'), 'post is not the first numbered heading');
   assert.ok(estimateTokens(rendered) < 500, `three-entry thread should fit the default budget, got ${estimateTokens(rendered)}`);
+});
+
+test('every entry in a long feed keeps its link', () => {
+  // A subreddit feed carries 25 entries. Their links used to share the label
+  // "open", and five of one label is what the repeated-controls filter drops,
+  // so a whole listing rendered with nothing that led to a post.
+  const entries = Array.from({ length: 25 }, (_, i) =>
+    `<entry><title>Post ${i}</title><link href="https://www.reddit.com/r/Fixture/comments/p${i}/post_${i}/"/>
+     <author><name>/u/poster</name></author><updated>2026-09-04T00:00:00+00:00</updated>
+     <content type="html">&lt;p&gt;Body ${i}&lt;/p&gt;</content></entry>`).join('');
+  const xml = `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Fixture</title>${entries}</feed>`;
+  const p = distill(xml, 'https://www.reddit.com/r/Fixture/.rss');
+  const headings = p.blocks.filter((b) => b.type === 'heading');
+  assert.equal(headings.length, 25);
+  assert.ok(headings.every((h, i) => h.href === `https://www.reddit.com/r/Fixture/comments/p${i}/post_${i}/`),
+    'a heading lost its link');
+  assert.ok(!p.blocks.some((b) => b.type === 'divider' && /repeated controls/.test(b.text)),
+    'the entry links were hidden as repeated controls');
 });
 
 test('feed entry code blocks survive raw markdown', () => {
