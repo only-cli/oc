@@ -1,6 +1,6 @@
 {
   "name": "@only-cli/oc",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Turn websites into a compact CLI so AI agents can browse without burning tokens.",
   "type": "module",
   "bin": {

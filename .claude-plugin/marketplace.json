@@ -6,7 +6,7 @@
       "name": "only-cli",
       "source": { "source": "github", "repo": "only-cli/oc" },
       "description": "Browse websites from the terminal in a few hundred tokens",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "homepage": "https://github.com/only-cli/oc",
       "license": "MIT"
     }
