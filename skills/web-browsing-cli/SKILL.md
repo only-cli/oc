@@ -32,7 +32,7 @@ oc ddg search claude code      oc so question 231767           oc learn doc azur
 oc py library json             oc mdn js Array/map             oc node api fs
 ```
 
-Sites: `hn`, `reddit`, `gh`, `x`, `linkedin`, `ddg`, `bing`, `so`, `yahoo`, `yt`, `aws`, `gcp`, `learn`, `wiki`, `py`, `mdn`, `node`, `ruby`, `go`, `rust`, `java`, `php`, `cpp`, `ts`. Name one by short name, bare name, or domain (`oc hn`, `oc ycombinator`, `oc news.ycombinator.com`). The last argument takes every word after it, so a query or title needs no quoting. `oc sites` lists every site with its verbs, which is cheaper than guessing one.
+Sites: `hn`, `reddit`, `gh`, `x`, `linkedin`, `ddg`, `bing`, `so`, `yahoo`, `yt`, `aws`, `gcp`, `learn`, `wiki`, `py`, `mdn`, `node`, `ruby`, `go`, `rust`, `java`, `php`, `cpp`, `ts`. Name one by short name, bare name, or domain (`oc hn`, `oc ycombinator`, `oc news.ycombinator.com`). The last argument takes every word after it, so a query or title needs no quoting. `oc sites` lists every site with its verbs, which is cheaper than guessing one. Reddit reads through its Atom feeds: a reddit.com page URL given to `open` meets a login wall or a 403, so use `oc reddit post <id>` or add `/.rss` to the URL, and keep Reddit calls under about ten a minute or the site answers 429.
 
 Prefer a shortcut over a hand-built URL when one exists for the site, and prefer `oc wiki article <title>` over a search when you already know the article's name.
 
