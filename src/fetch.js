@@ -497,7 +497,10 @@ export function proxyGet(url, proxy, headers = {}, tlsOpts = {}) {
  *   identity got the page (impers:chrome, impers:firefox, or fetch)
  */
 export async function fetchPage(url, { jar } = {}) {
-  const target = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+  let target = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+  // A reader with no cookies for reddit.com gets the feed where the page
+  // would be a login wall; one who logged in gets the page it asked for.
+  if (!jar?.cookieHeaderFor(target)) target = redditFeedURL(target) ?? target;
   await assertSafeTarget(target);
   const impers = await loadImpers();
   return impers ? viaImpers(impers, target, jar) : viaFetch(target, jar);
@@ -561,6 +564,39 @@ function captureSetCookie(jar, url, res) {
 // a per-address rate limit of about ten a minute. Subdomains inherit the
 // entry.
 const FIREFOX_FIRST_HOSTS = ['reddit.com'];
+
+// Reddit has sent logged-out readers of its HTML pages to a login page since
+// June 2026 (#52), while the Atom feed beside each of those pages still
+// answers. A feed entry links to the page, so following a post out of a
+// subreddit feed used to land on the wall. The front page, subreddit
+// listings, posts, user pages and search are mapped to their feeds here;
+// anything else on reddit.com is fetched as asked.
+const REDDIT_HOSTS = ['reddit.com', 'www.reddit.com', 'old.reddit.com', 'new.reddit.com', 'np.reddit.com'];
+const SEG = '[A-Za-z0-9_.-]+';
+const REDDIT_FEED_PATHS = new RegExp(
+  `^(?:|/r/${SEG}(?:/(?:new|top|hot|rising))?|/(?:r/${SEG}/)?comments/${SEG}(?:/${SEG}){0,2}|/u(?:ser)?/${SEG})$`,
+);
+
+/**
+ * The www.reddit.com Atom feed for a reddit.com page URL, or null when the URL
+ * is not one of the page shapes that has a feed, or is a feed already.
+ * @param {string} target
+ * @returns {string | null}
+ */
+export function redditFeedURL(target) {
+  let u;
+  try {
+    u = new URL(target);
+  } catch {
+    return null;
+  }
+  if (!REDDIT_HOSTS.includes(u.hostname.toLowerCase())) return null;
+  const path = u.pathname.replace(/\/+$/, '');
+  if (/\.(?:rss|json|xml)$/i.test(path)) return null;
+  if (path === '/search') return `https://www.reddit.com/search.rss${u.search}`;
+  if (!REDDIT_FEED_PATHS.test(path)) return null;
+  return `https://www.reddit.com${path.replace(/^\/u\//, '/user/')}/.rss${u.search}`;
+}
 
 /**
  * The order in which impers identities are tried for a URL.

@@ -5,7 +5,7 @@ import https from 'node:https';
 import net from 'node:net';
 import tls from 'node:tls';
 
-const { fetchPage, followRedirects, identityOrder, resolveProxy, proxyGet, viaImpers } = await import('../src/fetch.js');
+const { fetchPage, followRedirects, identityOrder, redditFeedURL, resolveProxy, proxyGet, viaImpers } = await import('../src/fetch.js');
 
 const BLOCKED_MESSAGE = 'blocked: private or internal URL';
 
@@ -809,6 +809,32 @@ test('reddit.com is asked with the firefox fingerprint first', () => withoutProx
   assert.equal(page.via, 'impers:firefox');
   assert.equal(page.status, 200);
 }));
+
+test('reddit.com page URLs are read as their atom feeds, feeds and everything else as asked', () => {
+  // The HTML pages end at a login wall for a logged-out reader, so the page
+  // shapes that have a feed beside them are fetched as that feed: this is what
+  // lets `oc do <n>` on a post in a subreddit feed reach its comments (#59).
+  assert.equal(redditFeedURL('https://www.reddit.com/r/ClaudeAI/comments/1w48zcr/some_title/'),
+    'https://www.reddit.com/r/ClaudeAI/comments/1w48zcr/some_title/.rss');
+  assert.equal(redditFeedURL('https://old.reddit.com/r/ClaudeAI/comments/1w48zcr/some_title/abc123/'),
+    'https://www.reddit.com/r/ClaudeAI/comments/1w48zcr/some_title/abc123/.rss');
+  assert.equal(redditFeedURL('https://reddit.com/comments/1w48zcr'), 'https://www.reddit.com/comments/1w48zcr/.rss');
+  assert.equal(redditFeedURL('https://www.reddit.com/r/ClaudeAI'), 'https://www.reddit.com/r/ClaudeAI/.rss');
+  assert.equal(redditFeedURL('https://www.reddit.com/r/ClaudeAI/top/?t=day'), 'https://www.reddit.com/r/ClaudeAI/top/.rss?t=day');
+  assert.equal(redditFeedURL('https://www.reddit.com/u/spez'), 'https://www.reddit.com/user/spez/.rss');
+  assert.equal(redditFeedURL('https://www.reddit.com/user/spez/'), 'https://www.reddit.com/user/spez/.rss');
+  assert.equal(redditFeedURL('https://www.reddit.com/search?q=claude+code'), 'https://www.reddit.com/search.rss?q=claude+code');
+  assert.equal(redditFeedURL('https://www.reddit.com/'), 'https://www.reddit.com/.rss');
+  // Already a feed, or a shape with no feed, or not reddit at all.
+  assert.equal(redditFeedURL('https://www.reddit.com/r/ClaudeAI/.rss'), null);
+  assert.equal(redditFeedURL('https://www.reddit.com/comments/1w48zcr/.rss'), null);
+  assert.equal(redditFeedURL('https://www.reddit.com/r/ClaudeAI/about/rules/'), null);
+  assert.equal(redditFeedURL('https://www.reddit.com/r/ClaudeAI/wiki/index'), null);
+  assert.equal(redditFeedURL('https://www.reddit.com/login'), null);
+  assert.equal(redditFeedURL('https://www.redditmedia.com/r/ClaudeAI/'), null);
+  assert.equal(redditFeedURL('https://reddit.com.example/r/ClaudeAI/'), null);
+  assert.equal(redditFeedURL('not a url'), null);
+});
 
 test('a refused firefox fingerprint on reddit.com falls back to chrome', () => withoutProxyEnv(async () => {
   const impers = fakeImpers(['firefox']);

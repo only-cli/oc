@@ -504,9 +504,15 @@ export function feedToHTML(text) {
     // HTML itself, ready to be embedded and parsed like any page.
     const body = (entry.querySelector('content') ?? entry.querySelector('summary') ?? entry.querySelector('description'))?.textContent ?? '';
     parts.push('<article>');
-    if (title) parts.push(`<h2>${esc(title)}</h2>`);
-    if (byline || href) {
-      parts.push(`<p>${esc(byline)}${href ? ` <a href="${esc(href)}">open</a>` : ''}</p>`);
+    // The title is the link. It used to sit beside the byline as an anchor
+    // labelled "open", the same label on every entry, and the repeated-controls
+    // filter hid the lot as chrome, so nothing in a subreddit feed led to a
+    // post: `do <n>` on one read its heading instead of following it (#59). A
+    // heading that is exactly one anchor becomes a followable heading in the
+    // walk, so the number the agent already sees is the one that opens it.
+    if (title) parts.push(`<h2>${href ? `<a href="${esc(href)}">${esc(title)}</a>` : esc(title)}</h2>`);
+    if (byline || (href && !title)) {
+      parts.push(`<p>${esc(byline)}${href && !title ? ` <a href="${esc(href)}">open</a>` : ''}</p>`);
     }
     parts.push(body, '</article>');
   }
