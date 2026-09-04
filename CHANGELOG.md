@@ -3,7 +3,7 @@
 Notable changes per release. Releases before 0.4.0 are listed at
 [github.com/only-cli/oc/releases](https://github.com/only-cli/oc/releases).
 
-## Unreleased
+## 0.5.2
 
 ### Changed
 
