@@ -347,6 +347,12 @@ export function distill(html, url = '', { view = null, type = '' } = {}) {
       // space that was never in the page.
       if (text) {
         blocks.push({ type: 'text', text, host: node.parentNode, pre: /^\s/.test(raw), post: /\s$/.test(raw) });
+      } else if (raw && blocks.at(-1)?.type === 'text') {
+        // A node that is only a space still separates the words either side
+        // of it. Wikipedia writes every &nbsp; as a span holding nothing
+        // else, and the fragments around it share a parent, so without this
+        // an infobox read "Firstappeared" and "20February 1991".
+        blocks.at(-1).post = true;
       }
       return;
     }

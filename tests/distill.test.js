@@ -368,6 +368,20 @@ test('an entity does not put spaces inside a word', () => {
   assert.ok(text.includes('interface & its restraint'), 'a real space was swallowed');
 });
 
+test('a space in an element of its own still separates two words', () => {
+  // Wikipedia's HTML writes every &nbsp; as <span typeof="mw:Entity">&nbsp;</span>.
+  // That span has no text once whitespace is collapsed, and the words either
+  // side of it were glued: "Firstappeared", "20February 1991".
+  const p = distill(`<html><body><table>
+    <tr><th>First<span typeof="mw:Entity">&nbsp;</span>appeared</th>
+    <td>20<span typeof="mw:Entity">&nbsp;</span>February 1991</td></tr>
+  </table><p>ten<b> </b>items</p></body></html>`, 'https://example.test/');
+  const text = p.blocks.map((b) => b.text).join('\n');
+  assert.ok(text.includes('First appeared'), `words glued:\n${text}`);
+  assert.ok(text.includes('20 February 1991'), `words glued:\n${text}`);
+  assert.ok(text.includes('ten items'), `words glued:\n${text}`);
+});
+
 test('a one-character value is kept, a lone bullet or separator is not', () => {
   // A Wikipedia infobox puts each value in a cell of its own, so a single
   // digit is a whole block: "Children" was printed with no number after it.
