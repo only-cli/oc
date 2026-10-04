@@ -284,6 +284,7 @@ function isFollowableHref(href, base, pageUrl) {
  */
 export function distill(html, url = '', { view = null, type = '' } = {}) {
   const { document } = parseHTML(asHTML(html, url, { view, type }));
+  lowerAttributeNames(document);
   const title = clean(document.querySelector('title')?.textContent ?? '');
   const base = documentBase(document, url);
   /** @type {Block[]} */
@@ -616,6 +617,28 @@ function number(blocks) {
 const bodyOf = (document) => document.querySelector('body') ?? document.documentElement;
 
 /**
+ * HTML attribute names are ASCII case-insensitive, but linkedom keeps them as
+ * written, so `<A HREF>` had no href, `<INPUT TYPE="hidden">` no type and
+ * `<P STYLE="display:none">` no style. Lowercase them once after parsing so
+ * every lookup below sees what a browser sees. As in a browser, the first of
+ * two spellings of one attribute wins.
+ * @param {Document} document
+ */
+function lowerAttributeNames(document) {
+  for (const el of document.querySelectorAll('*')) {
+    const attributes = [...el.attributes];
+    if (attributes.every(({ name }) => name === name.toLowerCase())) continue;
+    const first = new Map();
+    for (const { name, value } of attributes) {
+      const lower = name.toLowerCase();
+      if (!first.has(lower)) first.set(lower, value);
+    }
+    for (const { name } of attributes) el.removeAttribute(name);
+    for (const [name, value] of first) el.setAttribute(name, value);
+  }
+}
+
+/**
  * Shared cleanup for the raw modes: parse, then delete the same noise
  * distill() skips, so neither raw output ever leaks scripts, styles, or
  * hidden content.
@@ -627,6 +650,7 @@ function cleanDocument(html, url = '', type = '') {
   // Raw is the mode an agent reaches for when the compact view left something
   // out, so it is the one place a JSON response keeps every field.
   const { document } = parseHTML(asHTML(html, url, { full: true, type }));
+  lowerAttributeNames(document);
   // Read the title before the sweep below removes the head with it.
   const title = clean(document.querySelector('title')?.textContent ?? '');
   for (const tag of DROP) {
