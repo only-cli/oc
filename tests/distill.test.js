@@ -81,6 +81,25 @@ test('attribute names are matched case-insensitively, as HTML does', () => {
   }
 });
 
+test('a display:none style is matched case-insensitively, as CSS does', () => {
+  // CSS property names and keywords are case-insensitive and may have space
+  // before the colon, so each of these hides its content in a browser.
+  const html = `<html><head><title>Styles</title></head><body>
+    <h1>Styles</h1>
+    <p>shown</p>
+    <p style="DISPLAY:NONE">secret-upper</p>
+    <p style="Display: None">secret-mixed</p>
+    <p style="display : none">secret-spaced</p>
+  </body></html>`;
+  const view = render(distill(html, 'https://example.com/s'), { budget: 5000 }).text;
+  for (const out of [view, toMarkdown(html), toHTML(html)]) {
+    assert.ok(out.includes('shown'));
+    for (const secret of ['secret-upper', 'secret-mixed', 'secret-spaced']) {
+      assert.ok(!out.includes(secret), `${secret} leaked`);
+    }
+  }
+});
+
 test('raw mode emits real markdown with hrefs an agent can follow', () => {
   const md = toMarkdown(html);
   assert.ok(md.startsWith('# Fixture News'));

@@ -293,7 +293,7 @@ export function distill(html, url = '', { view = null, type = '' } = {}) {
   const hidden = (el) =>
     el.getAttribute('hidden') !== null ||
     el.getAttribute('aria-hidden') === 'true' ||
-    /display:\s*none/.test(el.getAttribute('style') ?? '');
+    DISPLAY_NONE.test(el.getAttribute('style') ?? '');
 
   /** Subtree already emitted, skipped when the rest of the page is walked. */
   let done = null;
@@ -616,6 +616,9 @@ function number(blocks) {
  */
 const bodyOf = (document) => document.querySelector('body') ?? document.documentElement;
 
+/** CSS property names and keywords are case-insensitive: `DISPLAY : NONE` hides too. */
+const DISPLAY_NONE = /display\s*:\s*none/i;
+
 /**
  * HTML attribute names are ASCII case-insensitive, but linkedom keeps them as
  * written, so `<A HREF>` had no href, `<INPUT TYPE="hidden">` no type and
@@ -661,7 +664,7 @@ function cleanDocument(html, url = '', type = '') {
     if ((el.getAttribute('type') ?? '').toLowerCase() === 'hidden') el.remove();
   }
   for (const el of [...document.querySelectorAll('[style]')]) {
-    if (/display:\s*none/.test(el.getAttribute('style') ?? '')) el.remove();
+    if (DISPLAY_NONE.test(el.getAttribute('style') ?? '')) el.remove();
   }
   return { document, title };
 }
