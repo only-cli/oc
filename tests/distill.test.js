@@ -56,6 +56,31 @@ test('input type is matched case-insensitively, as HTML does', () => {
   }
 });
 
+test('attribute names are matched case-insensitively, as HTML does', () => {
+  // HTML attribute names are ASCII case-insensitive and linkedom keeps them
+  // as written. Uppercase markup lost its links, numbered a hidden input as
+  // a text field and printed hidden content, in the view and in raw.
+  const html = `<HTML><HEAD><TITLE>Legacy</TITLE></HEAD><BODY>
+    <H1>Legacy page</H1>
+    <A HREF="/next">Next page</A>
+    <FORM><INPUT TYPE="hidden" NAME="csrf" VALUE="secret-token"></FORM>
+    <P STYLE="display:none">secret-style</P>
+    <P HIDDEN>secret-hidden</P>
+    <DIV Aria-Hidden="true">secret-aria</DIV>
+    <a href="/first" HREF="/second">Twice</a>
+  </BODY></HTML>`;
+  const page = distill(html, 'https://example.com/old');
+  const links = page.blocks.filter((b) => b.type === 'link');
+  assert.deepEqual(links.map((b) => [b.text, b.href]), [['Next page', '/next'], ['Twice', '/first']]);
+  assert.ok(!page.blocks.some((b) => b.type === 'input'), 'hidden input numbered');
+  const view = render(page, { budget: 5000 }).text;
+  for (const out of [view, toMarkdown(html), toHTML(html)]) {
+    for (const secret of ['secret-token', 'secret-style', 'secret-hidden', 'secret-aria']) {
+      assert.ok(!out.includes(secret), `${secret} leaked`);
+    }
+  }
+});
+
 test('raw mode emits real markdown with hrefs an agent can follow', () => {
   const md = toMarkdown(html);
   assert.ok(md.startsWith('# Fixture News'));
