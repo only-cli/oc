@@ -39,7 +39,7 @@ jobs:
       # No registry-url here: it writes an .npmrc auth-token line with a
       # placeholder value, and npm then authenticates with that instead of
       # falling through to OIDC trusted publishing.
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
       # Trusted publishing needs npm 11.5.1 or newer; node 24 has bundled a
@@ -103,7 +103,7 @@ jobs:
     if: needs.publish.outputs.channel == 'latest'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
       # Same invocation the install-loop experiment proved out, telemetry left
