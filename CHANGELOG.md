@@ -7,6 +7,8 @@ Notable changes per release. Releases before 0.4.0 are listed at
 
 ### Added
 
+- `oc --version` (or `-V`) prints the installed version, so an agent can
+  tell which verbs and fixes it has before reaching for one.
 - Package registry shortcuts: `oc npm`, `oc pip`, `oc cargo`, `oc gem`, and
   `oc docker` read the registries' own JSON APIs, so an agent asks for a
   version, license, engine range, or dependency list in one command and gets
