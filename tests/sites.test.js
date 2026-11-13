@@ -66,6 +66,13 @@ test('a real site with a missing or unknown verb names the verbs it has', () => 
     /not a reddit\.com shortcut.*sub <name>/s);
 });
 
+test('an Object member name is an unknown verb, not a shortcut', () => {
+  for (const verb of ['toString', 'constructor', '__proto__', 'hasOwnProperty']) {
+    assert.throws(() => resolveSite('hn', [verb]),
+      /not a news\.ycombinator\.com shortcut, try: top/, verb);
+  }
+});
+
 test('reddit verbs reach the www.reddit.com atom feeds, not old.reddit.com', () => {
   // old.reddit.com sends every logged-out request to a login page and the
   // .json views on www answer 403, so the feeds are the only public reading.
