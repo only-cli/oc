@@ -63,6 +63,7 @@ flags:
   --domain <host>     login only: the hostname those cookies belong to
   --expires <dur>     login only: how long the session lasts (default 1h)
   --allow-http        login only: let these cookies travel over plain http
+  --version, -V       print the installed version and exit
 
 Authenticated pages: run 'printf %s "session=..." | oc login --cookie - --domain
 example.com' to seed cookies for a session (default lifetime 1h, override with
@@ -174,8 +175,17 @@ async function main() {
       expires: { type: 'string' },
       'allow-http': { type: 'boolean', default: false },
       help: { type: 'boolean', short: 'h', default: false },
+      version: { type: 'boolean', short: 'V', default: false },
     },
   });
+
+  // Read at call time rather than baked in, so the number can never drift from
+  // the package that npm actually installed.
+  if (values.version) {
+    const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+    console.log(pkg.version);
+    return;
+  }
 
   // Metrics cost tokens too, so they are opt-in: agents pass --verbose only
   // when their own verbose mode is on, or the user exports OC_VERBOSE=1.

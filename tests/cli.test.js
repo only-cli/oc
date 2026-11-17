@@ -55,6 +55,16 @@ test('no command, --help, and -h all print the usage and exit 0', () => {
   }
 });
 
+test('--version and -V print the package version alone and exit 0', () => {
+  const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  for (const args of [['--version'], ['-V'], ['open', '--version']]) {
+    const r = oc(args);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.stdout, `${version}
+`);
+  }
+});
+
 test('the usage names every dispatchable command exactly once', () => {
   // The help text and the dispatch table live a hundred lines apart. A command
   // that dispatches but is not in the help is undiscoverable; one in the help
