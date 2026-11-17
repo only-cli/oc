@@ -3,6 +3,17 @@
 Notable changes per release. Releases before 0.4.0 are listed at
 [github.com/only-cli/oc/releases](https://github.com/only-cli/oc/releases).
 
+## 0.5.10
+
+### Security
+
+- Page text no longer reaches the terminal with its control characters. A
+  title or body carrying ESC, OSC, or C1 sequences could recolor or rewrite
+  what oc printed, or write the clipboard through OSC 52 on terminals that
+  allow it. Every line oc prints now drops C0 controls other than tab and
+  newline, DEL, and C1
+  ([GHSA-4w89-h366-3vq8](https://github.com/only-cli/oc/security/advisories/GHSA-4w89-h366-3vq8)).
+
 ## 0.5.9
 
 ### Added
