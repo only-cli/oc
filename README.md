@@ -75,7 +75,7 @@ oc logout [session]    forget a session: cookies and saved page
 oc session ls|rm [name]  list saved sessions, or forget one (page + cookies)
 ```
 
-Flags: `--budget <tokens>` (default 500), `--json`, `--html` (raw as cleaned HTML), `--session <name>`, `--verbose`/`-v` (metrics on stderr, or export `OC_VERBOSE=1`).
+Flags: `--budget <tokens>` (default 500), `--json`, `--html` (raw as cleaned HTML), `--session <name>`, `--verbose`/`-v` (metrics on stderr, or export `OC_VERBOSE=1`), `--version`/`-V`.
 
 ## Supported websites
 
