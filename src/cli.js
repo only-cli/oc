@@ -25,6 +25,15 @@ import {
   JAR_EXPIRED,
 } from './cookies.js';
 
+// Page titles, bodies, and server messages are remote input, and a terminal acts
+// on the control characters in them: colors, cursor moves, an OSC 52 clipboard
+// write. oc prints none of its own, so every line out drops C0 controls but tab
+// and newline, DEL, and C1. JSON already escapes C0; this catches DEL and C1.
+const CONTROLS = /[\x00-\x08\x0b-\x1f\x7f-\x9f]/g;
+const neutralize = (s) => String(s).replace(CONTROLS, '');
+const print = (s) => console.log(neutralize(s));
+const warn = (s) => console.error(neutralize(s));
+
 const HELP = `only-cli: the web as a compact terminal, built for AI agents.
 
 usage: oc <command> [args] [flags]
@@ -94,7 +103,7 @@ const remember = (page, name, cursor) => {
   try {
     saveSession(name, sessionFromPage(page, loadSession(name), { cursor }));
   } catch (err) {
-    console.error(`oc: warning: could not save session '${name}' (${err.message}), 'do'/'read'/'next' may act on stale state`);
+    warn(`oc: warning: could not save session '${name}' (${err.message}), 'do'/'read'/'next' may act on stale state`);
   }
 };
 
@@ -107,7 +116,7 @@ const savings = (out, raw) =>
 const NO_CONTENT_EXIT = 2;
 
 const noContent = (url, detail, hint = "; 'oc raw' has the page's markdown if there is any, otherwise this one needs a browser") => {
-  console.error(`oc: no readable content at ${url} (${detail}), so it is JavaScript-only, gated, or challenged${hint}`);
+  warn(`oc: no readable content at ${url} (${detail}), so it is JavaScript-only, gated, or challenged${hint}`);
   // Not process.exit: stdout may still be draining, and whatever did render is
   // worth printing even when the render failed.
   process.exitCode = NO_CONTENT_EXIT;
@@ -183,7 +192,7 @@ async function main() {
   // the package that npm actually installed.
   if (values.version) {
     const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-    console.log(pkg.version);
+    print(pkg.version);
     return;
   }
 
@@ -193,7 +202,7 @@ async function main() {
 
   let [command, ...args] = positionals;
   if (values.help || !command) {
-    console.log(HELP);
+    print(HELP);
     return;
   }
 
@@ -258,7 +267,7 @@ async function main() {
         // A number that points at text has no page behind it, so `do` reads it
         // rather than making the agent pay for a second command to be told.
         if (target.read != null) {
-          return console.log(act.read(target.read, { session: sessionName, budget: asked || 2000 }));
+          return print(act.read(target.read, { session: sessionName, budget: asked || 2000 }));
         }
         url = target.url;
       } else {
@@ -277,7 +286,7 @@ async function main() {
       // Secure cookies are withheld from a plain-http request. Say so, or the
       // fetch comes back a login page and nothing explains why.
       if (jarData && withheldForScheme(jarData, url)) {
-        console.error(`oc: warning: session '${sessionName}' holds https-only cookies, so they are not sent to ${url}`
+        warn(`oc: warning: session '${sessionName}' holds https-only cookies, so they are not sent to ${url}`
           + '; seed them with --allow-http if this site really is http-only');
       }
       const jar = jarData ? createJarHandle(sessionName, jarData) : null;
@@ -298,8 +307,8 @@ async function main() {
         const failure = auth ?? contentFailure(contentTokens(page), view ? 0 : htmlTokens);
         // Always present, so a caller can branch on the field rather than on
         // whether a field it was hoping for turned up.
-        console.log(JSON.stringify({ ...page, empty: failure != null }));
-        if (verbose) console.error(resources());
+        print(JSON.stringify({ ...page, empty: failure != null }));
+        if (verbose) warn(resources());
         if (auth) {
           if (jar) clearCookieJar(sessionName);
           noContent(finalUrl, auth);
@@ -319,12 +328,12 @@ async function main() {
         }
         const out = values.html ? toHTML(html, finalUrl, { type }) : toMarkdown(html, finalUrl, { type });
         const outTokens = estimateTokens(out);
-        console.log(out);
+        print(out);
         if (verbose) {
           const cost = outTokens < MIN_CONTENT
             ? `nothing distilled out of ~${htmlTokens} tokens of page HTML`
             : savings(outTokens, htmlTokens);
-          console.error(`${cost}; ${resources()}`);
+          warn(`${cost}; ${resources()}`);
         }
         // Only the blank case here. `raw` is the fallback the compact view's
         // failure line names, so it must not fail on the same pages: a page
@@ -347,14 +356,14 @@ async function main() {
       }
       const { text, stats } = render(page, { budget });
       remember(page, sessionName, stats.next);
-      console.log(text);
+      print(text);
       if (verbose) {
         // Reporting '100% saved' of a render that extracted nothing is the one
         // place this line lies, and it lies in the tool's own favour.
         const cost = failure
           ? `no content distilled out of ~${htmlTokens} tokens of page HTML`
           : savings(stats.tokens, htmlTokens);
-        console.error(`~${stats.tokens} tokens, ${stats.rendered}/${stats.blocks} blocks rendered, ${cost}; ${resources()}`);
+        warn(`~${stats.tokens} tokens, ${stats.rendered}/${stats.blocks} blocks rendered, ${cost}; ${resources()}`);
       }
       if (failure) noContent(finalUrl, failure);
       return;
@@ -375,24 +384,24 @@ async function main() {
       const page = distill(html, url);
       if (values.json) {
         remember(page, sessionName);
-        console.log(JSON.stringify({ ...page, empty: false }));
+        print(JSON.stringify({ ...page, empty: false }));
         return;
       }
       const { text, stats } = render(page, { budget: asked || 500 });
       remember(page, sessionName, stats.next);
-      console.log(text);
+      print(text);
       if (verbose) {
-        console.error(`~${stats.tokens} tokens, results via ${via}, ${Math.round(performance.now() - t0)}ms`);
+        warn(`~${stats.tokens} tokens, results via ${via}, ${Math.round(performance.now() - t0)}ms`);
       }
       return;
     }
-    case 'read': return console.log(act.read(args[0], { session: sessionName, budget: asked || 2000 }));
-    case 'next': return console.log(act.next({ session: sessionName, budget: asked || 500 }));
-    case 'find': return console.log(act.find(args.join(' '), { session: sessionName, budget: asked || 500 }));
+    case 'read': return print(act.read(args[0], { session: sessionName, budget: asked || 2000 }));
+    case 'next': return print(act.next({ session: sessionName, budget: asked || 500 }));
+    case 'find': return print(act.find(args.join(' '), { session: sessionName, budget: asked || 500 }));
     case 'fill': return act.fill(Number(args[0]), args.slice(1).join(' '));
     case 'submit': return act.submit(args[0] ? Number(args[0]) : undefined);
     case 'back': return act.back();
-    case 'sites': return console.log(listSites());
+    case 'sites': return print(listSites());
     case 'session': {
       // Saved sessions accumulate on disk (one JSON per page kept for
       // do/read/next), so agents can inspect and drop them without guessing
@@ -400,10 +409,10 @@ async function main() {
       const [sub, target] = args;
       if (sub === 'ls') {
         const list = listSessions();
-        if (values.json) return console.log(JSON.stringify(list));
-        if (!list.length) return console.log('no saved sessions');
+        if (values.json) return print(JSON.stringify(list));
+        if (!list.length) return print('no saved sessions');
         for (const s of list) {
-          console.log(`${s.name}${s.url ? `  ${s.url}` : ''}${s.title ? `  (${s.title})` : ''}${s.cookies ? '  [cookies]' : ''}`);
+          print(`${s.name}${s.url ? `  ${s.url}` : ''}${s.title ? `  (${s.title})` : ''}${s.cookies ? '  [cookies]' : ''}`);
         }
         return;
       }
@@ -413,8 +422,8 @@ async function main() {
         // that reads "forgot session" would move on believing the login is
         // gone, so rm fails loud instead of succeeding at nothing.
         if (!forgetSession(name)) throw new Error(`no such session '${name}', run oc session ls`);
-        if (values.json) return console.log(JSON.stringify({ forgotten: name }));
-        return console.log(`forgot session '${name}'`);
+        if (values.json) return print(JSON.stringify({ forgotten: name }));
+        return print(`forgot session '${name}'`);
       }
       throw new Error(`usage: oc session ls|rm [name]`);
     }
@@ -424,6 +433,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(`oc: ${err.message}`);
+  warn(`oc: ${err.message}`);
   process.exit(1);
 });

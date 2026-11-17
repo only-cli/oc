@@ -320,3 +320,18 @@ test('session rm refuses a name that is a path or a cookie sidecar, session bogu
   assert.equal(r2.status, 1);
   assert.match(r2.stderr, /^oc: usage: oc session ls\|rm \[name\]/);
 });
+
+test('page text reaches the terminal without its control characters', () => {
+  // A title or body is remote input; a terminal would act on ESC/OSC in it
+  // (colors, cursor moves, an OSC 52 clipboard write) instead of showing it.
+  const evil = '<title>Hi\x1b]52;c;cHduZWQ=\x07\x1b[31mRED&#27;[2J\u009b1m\r</title>'
+    + '<p>Body \x1b[8mhidden\x1b[0m text that is long enough to count as the main content of this page.</p>';
+  const page = distill(evil, 'https://evil.test/');
+  saveSession('evil', sessionFromPage(page, null, { cursor: 0 }));
+  for (const args of [['next', '--session', 'evil'], ['session', 'ls'], ['read', '1', '--session', 'evil']]) {
+    const r = oc(args);
+    assert.doesNotMatch(r.stdout + r.stderr, /[\x00-\x08\x0b-\x1f\x7f-\x9f]/, args.join(' '));
+  }
+  const ls = oc(['session', 'ls']).stdout;
+  assert.ok(ls.includes('(Hi]52;c;cHduZWQ=[31mRED[2J1m)'), 'the rest stays visible as inert text');
+});
