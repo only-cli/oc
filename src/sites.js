@@ -116,7 +116,9 @@ export function resolveSite(name, args) {
   if (!site) return null;
   const [verb, ...rest] = args;
   if (!verb) throw new Error(`usage: oc ${name} <verb>, one of: ${verbs(site)}`);
-  const def = site.commands[verb];
+  // commands comes from JSON.parse, so a plain lookup would also find
+  // inherited Object members such as toString, which name no URL.
+  const def = Object.hasOwn(site.commands, verb) ? site.commands[verb] : undefined;
   if (!def) throw new Error(`'${verb}' is not a ${site.domain} shortcut, try: ${verbs(site)}`);
 
   const need = def.args ?? [];
