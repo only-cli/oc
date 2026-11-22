@@ -92,6 +92,7 @@ Works on any mostly-static site with no per-site setup: news sites, blogs, docum
 | LinkedIn | `oc linkedin` | `profile <name>`, `company <name>`, `jobs <query>` (public guest views) |
 | DuckDuckGo | `oc ddg` | `search <query>`, `lite <query>` |
 | Bing | `oc bing` | `search <query>`, `news <query>` |
+| Keenable | `oc keenable` (a web search API, asked keyless, 1,000 requests an hour per IP) | `search <query>` |
 | Stack Overflow | `oc so` (via Atom feeds and the Stack Exchange API) | `search <query>`, `question <id>`, `tag <name>`, `user <id>`, `recent` |
 | Discourse forums | `oc urlo`, `oc swift`, `oc nixos` (users.rust-lang.org, forums.swift.org, discourse.nixos.org) | `latest`, `search <query>`, `topic <id>` (the thread as Markdown) |
 | Yahoo Finance | `oc yahoo` | `quote <symbol>`, `news <symbol>`, `history <symbol>`, `lookup <query>`, `markets`, `gainers`, `losers`, `trending` |

@@ -1,0 +1,6 @@
+{
+  "domain": "keenable.ai",
+  "commands": {
+    "search": { "api": "https://api.keenable.ai/v1/search/public?query={query}&max_results=10&snippet_max_length=200&keenable_title=only-cli", "results": "results", "fields": { "title": "title", "url": "url", "text": "snippet" }, "args": ["query"] }
+  }
+}

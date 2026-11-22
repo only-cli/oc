@@ -1,0 +1,37 @@
+{
+ "query": "postgres 18 release notes",
+ "results": [
+  {
+   "title": "E.1. Release 18.7",
+   "url": "https://postgresql.org/docs/18/release-18-7.html",
+   "description": "",
+   "snippet": "Release 18.7 #\n**Release date:** 2026-11-12\nThis release contains a variety of fixes from 18.6. For information about new features in major release 18, see [Section",
+   "published_at": "2026-11-12T14:06:09Z",
+   "acquired_at": "2026-11-20T17:13:35Z"
+  },
+  {
+   "title": "Appendix E. Release Notes",
+   "url": "https://postgresql.org/docs/current/release.html",
+   "description": "",
+   "snippet": "almost every release, but the improvements are usually observed by users as simply faster queries.\nA complete list of changes for each release can be obtained by viewing the",
+   "published_at": "2026-11-12T14:06:09Z",
+   "acquired_at": "2026-11-13T02:25:05Z"
+  },
+  {
+   "title": "PostgreSQL 18 Released!",
+   "url": "https://postgresql.org/about/news/postgresql-18-released-3142",
+   "description": "",
+   "snippet": "today announced the release of [PostgreSQL 18](https://www.postgresql.org/docs/18/release-18.html), the latest version of the world's most advanced open source database.",
+   "published_at": "2025-09-25T00:00:00Z",
+   "acquired_at": "2026-11-12T22:46:32Z"
+  },
+  {
+   "title": "E.7. Release 18",
+   "url": "https://postgresql.org/docs/current/release-18.html",
+   "description": "",
+   "snippet": "function for generating timestamp-ordered [UUIDs](https://postgresql.org/docs/current/datatype-uuid.html).\n- Virtual [generated",
+   "published_at": "2026-11-12T14:06:09Z",
+   "acquired_at": "2026-11-20T19:13:43Z"
+  }
+ ]
+}
