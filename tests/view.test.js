@@ -7,10 +7,12 @@ import { resultsToHTML } from '../src/apisearch.js';
 import { resolveSite, sites } from '../src/sites.js';
 
 // Trimmed copies of real answers: PyPI's package endpoint for requests,
-// crates.io's dependency list for tokio 1.47.1, npm's search for "http client".
+// crates.io's dependency list for tokio 1.47.1, npm's search for "http client",
+// Keenable's search for "postgres 18 release notes".
 const pypi = readFileSync(new URL('./pages/pypi_package.json', import.meta.url), 'utf8');
 const deps = readFileSync(new URL('./pages/crates_dependencies.json', import.meta.url), 'utf8');
 const npmSearch = JSON.parse(readFileSync(new URL('./pages/npm_search.json', import.meta.url), 'utf8'));
+const keenableSearch = JSON.parse(readFileSync(new URL('./pages/keenable_search.json', import.meta.url), 'utf8'));
 
 const PYPI_URL = 'https://pypi.org/pypi/requests/json';
 const DEPS_URL = 'https://crates.io/api/v1/crates/tokio/1.47.1/dependencies';
@@ -128,6 +130,24 @@ test('an api search result can take its text and link from templates', () => {
   const data = { crates: [{ id: 'serde_json', name: 'serde_json', max_stable_version: '1.0.151', description: 'A JSON serialization file format' }], meta: { total: 1 } };
   assert.match(resultsToHTML(crates, 'serde', data, 'https://crates.io/api/v1/crates?q=serde'),
     /<a href="https:\/\/docs\.rs\/serde_json">serde_json<\/a> 1\.0\.151 A JSON/);
+});
+
+test('a Keenable search names oc in the URL and reads its text from snippet', () => {
+  // The keyless endpoint wants the calling app named, and oc sends no custom
+  // headers, so the name rides in keenable_title. Its description field is
+  // always empty; the page text is in snippet, capped by the definition.
+  const keenable = resolveSite('keenable', ['search', 'postgres', '18', 'release', 'notes']);
+  assert.equal(keenable.query, 'postgres 18 release notes');
+  const api = new URL(keenable.api.api.replace('{query}', 'x'));
+  assert.equal(api.origin + api.pathname, 'https://api.keenable.ai/v1/search/public');
+  assert.equal(api.searchParams.get('keenable_title'), 'only-cli');
+  assert.equal(api.searchParams.get('snippet_max_length'), '200');
+  const endpoint = 'https://api.keenable.ai/v1/search/public?query=postgres%2018%20release%20notes';
+  const html = resultsToHTML(keenable.api, keenable.query, keenableSearch, endpoint);
+  assert.match(html, /<a href="https:\/\/postgresql\.org\/docs\/18\/release-18-7\.html">E\.1\. Release 18\.7<\/a> Release 18\.7 #/);
+  assert.match(html, /<p>4 pages match/);
+  const { stats } = render(distill(html, endpoint), { budget: 500 });
+  assert.equal(stats.rendered, stats.blocks, 'a result was cut from a four-result page');
 });
 
 test('an empty results path means the response itself is the list', () => {

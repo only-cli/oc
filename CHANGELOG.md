@@ -3,6 +3,14 @@
 Notable changes per release. Releases before 0.4.0 are listed at
 [github.com/only-cli/oc/releases](https://github.com/only-cli/oc/releases).
 
+## Unreleased
+
+### Added
+
+- `oc keenable search <query>` asks Keenable's keyless web search API
+  and prints its ten best results with a short snippet each, ranked by
+  Keenable, through the same `api` shape `oc mdn search` uses.
+
 ## 0.5.10
 
 ### Security
